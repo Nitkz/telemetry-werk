@@ -1,22 +1,34 @@
+using System.Threading.Channels;
 using TelemetryWerk.Api.Host.Extensions;
 using TelemetryWerk.Api.Host.Hubs;
 using TelemetryWerk.Api.Host.Middlewares;
+using TelemetryWerk.Api.Host.Publishers;
 using TelemetryWerk.Api.Host.Workers;
 using TelemetryWerk.Api.Domain.Interfaces;
 using TelemetryWerk.Api.Infrastructure.Repositories;
 using TelemetryWerk.Api.Application.Interfaces;
 using TelemetryWerk.Api.Application.Services;
+using TelemetryWerk.Api.Application.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.ConfigureServerSettings();
+
+// Create a Pub/Sub Channel for real-time Machine State updates between REST APIs and Background Workers
+var updateChannel = Channel.CreateUnbounded<MachineStateUpdateMessage>();
+
+// Register the Channel Writer/Reader
+builder.Services.AddSingleton(updateChannel.Writer);
+builder.Services.AddSingleton(updateChannel.Reader);
 
 // Add services to the container.
 builder.Services.AddApiOptions(builder.Configuration);
 builder.Services.AddSingleton<IMachineRepository, InMemoryMachineRepository>();
 builder.Services.AddScoped<IMachineService, MachineService>();
+builder.Services.AddSingleton<ITelemetryPublisher, SignalRTelemetryPublisher>();
+builder.Services.AddScoped<ITelemetryIngestionService, TelemetryIngestionService>();
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
-builder.Services.AddHostedService<TelemetryBackgroundIngester>();
+builder.Services.AddHostedService<PseudoTelemetryGeneratorWorker>();
 
 builder.Services.AddCors(options =>
 {

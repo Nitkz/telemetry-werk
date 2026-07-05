@@ -1,5 +1,4 @@
-using System.Linq;
-using System.Threading.Tasks;
+using System.Threading.Channels;
 using TelemetryWerk.Api.Application.Interfaces;
 using TelemetryWerk.Api.Domain.Entities;
 using TelemetryWerk.Api.Domain.Interfaces;
@@ -7,7 +6,7 @@ using TelemetryWerk.Api.Application.Contracts;
 
 namespace TelemetryWerk.Api.Application.Services;
 
-public class MachineService(IMachineRepository machineRepository) : IMachineService
+public class MachineService(IMachineRepository machineRepository, ChannelWriter<MachineStateUpdateMessage> channelWriter) : IMachineService
 {
     public async Task<PagedCollection<MachineNodeDto>> GetNodesAsync(int limit, string? afterId)
     {
@@ -41,6 +40,8 @@ public class MachineService(IMachineRepository machineRepository) : IMachineServ
 
         await machineRepository.AddAsync(newNode);
 
+        await channelWriter.WriteAsync(new MachineStateUpdateMessage("AddOrUpdate", newNode));
+
         return new MachineNodeDto 
         { 
             Id = newNode.Id, 
@@ -54,6 +55,8 @@ public class MachineService(IMachineRepository machineRepository) : IMachineServ
         var updatedNode = await machineRepository.UpdateAsync(id, request.Status, request.CoreTemperature);
 
         if (updatedNode == null) return null;
+
+        await channelWriter.WriteAsync(new MachineStateUpdateMessage("AddOrUpdate", updatedNode));
 
         return new MachineNodeDto 
         { 
