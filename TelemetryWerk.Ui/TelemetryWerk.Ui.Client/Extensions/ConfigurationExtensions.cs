@@ -12,7 +12,6 @@ public static class ConfigurationExtensions
     public static async Task ConfigureWasmSettings(this WebAssemblyHostBuilder builder, string configApiUrl = "config")
     {
         var apiEndpoint = ApiServiceOptions.DefaultApiEndpoint; // Fallback default
-        var apiKey = "";
 
         try
         {
@@ -22,19 +21,28 @@ public static class ConfigurationExtensions
             if (serverConfig != null)
             {
                 apiEndpoint = serverConfig.ApiEndpoint ?? apiEndpoint;
-                apiKey = serverConfig.ApiKey ?? apiKey;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Config Error]: Could not fetch remote config, using fallback. {ex.Message}");
+            // During WASM initialization, we must build a temporary ServiceProvider to get an ILogger
+            using var sp = builder.Services.BuildServiceProvider();
+            var logger = sp.GetService<Microsoft.Extensions.Logging.ILoggerFactory>()?.CreateLogger("ConfigurationExtensions");
+            
+            if (logger != null)
+            {
+                logger.LogWarning(ex, "[Config Error]: Could not fetch remote config, using fallback.");
+            }
+            else
+            {
+                Console.WriteLine($"[Config Error]: Could not fetch remote config, using fallback. {ex.Message}");
+            }
         }
 
         // Map the fetched (or fallback) data to .NET Configuration system
         var configDict = new Dictionary<string, string?>
         {
-            [$"{ApiServiceOptions.SectionName}:ApiEndpoint"] = apiEndpoint,
-            [$"{ApiServiceOptions.SectionName}:ApiKey"] = apiKey
+            [$"{ApiServiceOptions.SectionName}:ApiEndpoint"] = apiEndpoint
         };
 
         builder.Configuration.AddInMemoryCollection(configDict);

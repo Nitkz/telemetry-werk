@@ -16,6 +16,9 @@ public partial class Settings
     [Inject]
     public IDialogService DialogService { get; set; } = default!;
 
+    [Inject]
+    public NavigationManager NavManager { get; set; } = default!;
+
     private bool _loading = true;
     private string? _error;
     private List<UiMachineNode> _nodes = new();
@@ -34,9 +37,9 @@ public partial class Settings
             var result = await MachineApiService.GetNodesAsync(100);
             _nodes = result.ToList();
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        catch (TelemetryWerk.Api.Client.ApiException ex) when (ex.StatusCode == 401)
         {
-            _error = "Unauthorized: Invalid API Key. Please check the API configuration.";
+            NavManager.NavigateTo("/login?error=Session expired");
         }
         catch (Exception ex)
         {

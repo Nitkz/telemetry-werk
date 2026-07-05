@@ -1,11 +1,18 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor.Services;
 using TelemetryWerk.Ui.Core.Configurations;
 using TelemetryWerk.Ui.Client.Extensions;
+using TelemetryWerk.Ui.Client.Auth;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 builder.Services.AddMudServices();
+
+builder.Services.AddAuthorizationCore();
+builder.Services.AddSingleton<PersistentAuthenticationStateProvider>();
+builder.Services.AddSingleton<AuthenticationStateProvider>(sp => sp.GetRequiredService<PersistentAuthenticationStateProvider>());
+builder.Services.AddTransient<SessionAuthenticationHandler>();
 
 // Fetch settings from UI Server pattern
 await builder.ConfigureWasmSettings();
@@ -20,12 +27,7 @@ builder.Services.AddHttpClient<TelemetryWerk.Api.Client.ITelemetryApiClient, Tel
     var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ApiServiceOptions>>().Value;
     var endpoint = string.IsNullOrWhiteSpace(options.ApiEndpoint) ? ApiServiceOptions.DefaultApiEndpoint : options.ApiEndpoint;
     client.BaseAddress = new Uri(endpoint);
-    
-    if (!string.IsNullOrEmpty(options.ApiKey))
-    {
-        client.DefaultRequestHeaders.Add("X-Api-Key", options.ApiKey);
-    }
-});
+}).AddHttpMessageHandler<SessionAuthenticationHandler>();
 
 // Register Core UI Services
 builder.Services.AddScoped<TelemetryWerk.Ui.Core.Interfaces.IMachineApiService, TelemetryWerk.Ui.Infrastructure.Services.MachineApiServiceImpl>();

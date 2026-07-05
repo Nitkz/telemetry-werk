@@ -37,6 +37,8 @@ builder.Services.AddSingleton<IMachineRepository, InMemoryMachineRepository>();
 builder.Services.AddScoped<IMachineService, MachineService>();
 builder.Services.AddSingleton<ITelemetryPublisher, SignalRTelemetryPublisher>();
 builder.Services.AddScoped<ITelemetryIngestionService, TelemetryIngestionService>();
+builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<MachineNodeDtoValidator>();
 builder.Services.AddControllers(options => 
@@ -69,9 +71,15 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddRateLimiter(options =>
 {
+    // Helper to get true client IP behind proxy
+    string GetClientIp(HttpContext ctx) => 
+        ctx.Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? 
+        ctx.Connection.RemoteIpAddress?.ToString() ?? 
+        ctx.Request.Headers.Host.ToString();
+
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? httpContext.Request.Headers.Host.ToString(),
+            partitionKey: GetClientIp(httpContext),
             factory: partition => new FixedWindowRateLimiterOptions
             {
                 AutoReplenishment = true,
@@ -79,6 +87,19 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0,
                 Window = TimeSpan.FromMinutes(1)
             }));
+
+    // Strict policy for Auth/Login to prevent brute-force attacks
+    options.AddPolicy("LoginLimiter", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: GetClientIp(httpContext),
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 5, // Allow max 5 login attempts
+                QueueLimit = 0,
+                Window = TimeSpan.FromMinutes(1) // per minute per IP
+            }));
+
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
@@ -86,13 +107,13 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.AddSecurityDefinition("ApiKey", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    c.AddSecurityDefinition("SessionKey", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
-        Description = "API Key authentication. Enter your API Key below.\nExample: DEV_MODE_PLEASE_CHANGE_THIS_KEY_IN_PRODUCTION",
+        Description = "Session Key authentication. Enter your Session Key below.",
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Name = "X-Api-Key",
+        Name = "X-Session-Key",
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-        Scheme = "ApiKeyScheme"
+        Scheme = "SessionKeyScheme"
     });
     
     c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
@@ -103,7 +124,7 @@ builder.Services.AddSwaggerGen(c =>
                 Reference = new Microsoft.OpenApi.Models.OpenApiReference
                 {
                     Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id = "ApiKey"
+                    Id = "SessionKey"
                 }
             },
             Array.Empty<string>()
@@ -112,6 +133,12 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+var appPassword = app.Configuration["AppPassword"];
+if (string.IsNullOrWhiteSpace(appPassword))
+{
+    throw new InvalidOperationException("CRITICAL: 'AppPassword' is not set in configuration. You must set a password in appsettings.json before starting the API server.");
+}
 
 app.UseSerilogRequestLogging();
 
@@ -128,7 +155,7 @@ app.UseRateLimiter();
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
-app.UseMiddleware<ApiKeyMiddleware>();
+app.UseMiddleware<SessionAuthMiddleware>();
 
 app.MapControllers();
 app.MapHub<TelemetryHub>("/hubs/telemetry");

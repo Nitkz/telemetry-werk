@@ -1,23 +1,21 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 using System.Threading.Tasks;
-using TelemetryWerk.Api.Application.Configurations;
+using TelemetryWerk.Api.Domain.Interfaces;
 
 namespace TelemetryWerk.Api.Host.Middlewares;
 
-public class ApiKeyMiddleware(RequestDelegate next)
+public class SessionAuthMiddleware(RequestDelegate next)
 {
-    private const string API_KEY_HEADER = "X-Api-Key";
+    private const string API_KEY_HEADER = "X-Session-Key";
     private const string API_KEY_QUERY = "access_token"; // Used by SignalR
 
-    public async Task InvokeAsync(HttpContext context, IOptions<ApiServiceOptions> options, ILogger<ApiKeyMiddleware> logger)
+    public async Task InvokeAsync(HttpContext context, ILogger<SessionAuthMiddleware> logger, ISessionRepository sessionRepository)
     {
-        var expectedKey = options.Value.ApiKey;
-
-        // If no API key is configured on the server, bypass validation
-        if (string.IsNullOrWhiteSpace(expectedKey))
+        // Bypass login endpoint
+        if (context.Request.Path.StartsWithSegments("/api/v1/auth/login", StringComparison.OrdinalIgnoreCase))
         {
             await next(context);
             return;
@@ -48,15 +46,21 @@ public class ApiKeyMiddleware(RequestDelegate next)
         }
 
         // Validate Key
-        if (string.IsNullOrWhiteSpace(providedKey) || providedKey != expectedKey)
+        bool isValid = false;
+        if (!string.IsNullOrWhiteSpace(providedKey))
         {
-            logger.LogWarning("API key validation: Failed. Client IP: {IpAddress}", context.Connection.RemoteIpAddress);
+            isValid = await sessionRepository.ValidateSessionAsync(providedKey);
+        }
+
+        if (!isValid)
+        {
+            logger.LogWarning("Session validation: Failed. Client IP: {IpAddress}", context.Connection.RemoteIpAddress);
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            await context.Response.WriteAsync("Unauthorized: Invalid API Key.");
+            await context.Response.WriteAsync("Unauthorized: Invalid Session Key.");
             return;
         }
 
-        logger.LogDebug("API key validation: Success");
+        logger.LogDebug("Session validation: Success");
 
         await next(context);
     }

@@ -1,15 +1,33 @@
 using MudBlazor.Services;
 using TelemetryWerk.Ui.Core.Configurations;
 using TelemetryWerk.Ui.Components;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Authentication;
+using TelemetryWerk.Ui.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add MudBlazor services
 builder.Services.AddMudServices();
 
+// Add Authentication
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/login";
+    });
+builder.Services.AddAuthorization();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<AuthenticationStateProvider, TelemetryWerk.Ui.Auth.PersistingServerAuthenticationStateProvider>();
+
 // Register API Configuration
 builder.Services.Configure<ApiServiceOptions>(
     builder.Configuration.GetSection(ApiServiceOptions.SectionName));
+
+builder.Services.AddTransient<TelemetryWerk.Ui.Auth.ServerSessionAuthenticationHandler>();
 
 // Register Authenticated HttpClient for REST API calls via Typed Client
 builder.Services.AddHttpClient<TelemetryWerk.Api.Client.ITelemetryApiClient, TelemetryWerk.Api.Client.TelemetryApiClient>((sp, client) =>
@@ -17,19 +35,14 @@ builder.Services.AddHttpClient<TelemetryWerk.Api.Client.ITelemetryApiClient, Tel
     var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ApiServiceOptions>>().Value;
     var endpoint = string.IsNullOrWhiteSpace(options.ApiEndpoint) ? ApiServiceOptions.DefaultApiEndpoint : options.ApiEndpoint;
     client.BaseAddress = new Uri(endpoint);
-    
-    if (!string.IsNullOrEmpty(options.ApiKey))
-    {
-        client.DefaultRequestHeaders.Add("X-Api-Key", options.ApiKey);
-    }
-});
+}).AddHttpMessageHandler<TelemetryWerk.Ui.Auth.ServerSessionAuthenticationHandler>();
 
 // Register Core UI Services
 builder.Services.AddScoped<TelemetryWerk.Ui.Core.Interfaces.IMachineApiService, TelemetryWerk.Ui.Infrastructure.Services.MachineApiServiceImpl>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents()
+    .AddInteractiveServerComponents(options => options.DetailedErrors = true)
     .AddInteractiveWebAssemblyComponents();
 
 var app = builder.Build();
@@ -46,6 +59,9 @@ else
 
 app.UseAntiforgery();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
@@ -57,5 +73,7 @@ app.MapGet("/config", (Microsoft.Extensions.Options.IOptionsSnapshot<ApiServiceO
 {
     return Results.Ok(options.Value);
 });
+
+app.MapAuthEndpoints();
 
 app.Run();
