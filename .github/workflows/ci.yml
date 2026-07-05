@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "auth" ]
+    branches: [ "**" ] # Run on all branches
   pull_request:
     branches: [ "main" ]
   workflow_dispatch: # Allows manual trigger from GitHub UI
