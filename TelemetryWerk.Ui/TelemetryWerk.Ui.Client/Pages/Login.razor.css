@@ -1,0 +1,37 @@
+/* Full screen wrapper for login */
+.login-wrapper {
+    background-color: #0d1117 !important;
+    background-image: radial-gradient(#30363d 1.5px, transparent 1.5px) !important;
+    background-size: 24px 24px !important;
+    min-height: 100vh;
+    width: 100vw;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Industrial Input Styling */
+::deep .industrial-input .mud-input-outlined-border {
+    border-color: #30363d !important;
+    border-radius: 2px !important;
+    border-width: 2px !important;
+}
+::deep .industrial-input .mud-input-label {
+    color: #8b949e !important;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 600;
+    letter-spacing: 1px;
+    background-color: #161b22 !important;
+    padding: 0 4px !important;
+}
+::deep .industrial-input.mud-input-has-value .mud-input-outlined-border,
+::deep .industrial-input:focus-within .mud-input-outlined-border {
+    border-color: #ffb300 !important;
+}
+::deep .industrial-input:focus-within .mud-input-label {
+    color: #ffb300 !important;
+}

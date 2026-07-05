@@ -1,0 +1,69 @@
+@page "/login"
+@layout Layout.EmptyLayout
+@inject NavigationManager NavigationManager
+@attribute [AllowAnonymous]
+
+<PageTitle>Login</PageTitle>
+
+<div class="login-wrapper">
+    <MudContainer MaxWidth="MaxWidth.Small" Class="pa-4">
+        <MudCard Elevation="10" Class="pa-6" Style="background-color: #161b22; border: 1px solid #30363d; border-top: 4px solid #ffb300; border-radius: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.Center" Class="mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.PrecisionManufacturing" Style="color: #ffb300;" Size="Size.Large" />
+                        <MudText Typo="Typo.h5" Style="color: #c9d1d9; font-family: 'Courier New', Courier, monospace; font-weight: 800; letter-spacing: 1.5px;">TELEMETRY_WERK</MudText>
+                    </MudStack>
+                    <MudText Typo="Typo.caption" Align="Align.Center" Style="color: #8b949e; letter-spacing: 2px; font-weight: 600; display: block;">AUTHORIZED PERSONNEL ONLY</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mb-6 rounded-0" Style="background-color: #b31d28; color: white; border: 1px solid #ff7b72;">
+                        <span style="font-family: monospace;">[SYS_ERR]: @ErrorMessage</span>
+                    </MudAlert>
+                }
+                
+                <form method="post" action="/api/auth/login">
+                    <MudTextField T="string" name="password" 
+                                  Label="SYSTEM ACCESS KEY" 
+                                  InputType="InputType.Password" 
+                                  Variant="Variant.Outlined" 
+                                  Required="true" 
+                                  Disabled="@(!_isInteractive)"
+                                  Class="mb-6 industrial-input"
+                                  Style="color: #c9d1d9;" />
+                    
+                    <MudButton ButtonType="ButtonType.Submit" 
+                               Variant="Variant.Filled" 
+                               FullWidth="true" 
+                               Size="Size.Large"
+                               Style="@($"background-color: #ffb300; color: #0d1117; font-weight: 900; border-radius: 2px; letter-spacing: 1.5px; font-family: monospace; {(!_isInteractive ? "opacity: 0.5; pointer-events: none;" : "")}")">
+                        @(_isInteractive ? "ENGAGE LINK" : "INITIALIZING SUBSYSTEMS...")
+                    </MudButton>
+                </form>
+            </MudCardContent>
+        </MudCard>
+    </MudContainer>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? ErrorMessage { get; set; }
+
+    private bool _isInteractive;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Deliberate artificial delay for the "Sci-Fi/Industrial" boot sequence effect 
+            // (Otherwise it loads too fast on localhost to even see it!)
+            await Task.Delay(800); 
+            
+            _isInteractive = true;
+            StateHasChanged();
+        }
+    }
+}
