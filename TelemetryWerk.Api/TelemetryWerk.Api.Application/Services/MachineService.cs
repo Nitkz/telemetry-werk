@@ -57,7 +57,7 @@ public class MachineService(IMachineRepository machineRepository, ChannelWriter<
         };
     }
 
-    public async Task<MachineNodeDto?> UpdateNodeAsync(string id, UpdateNodeRequestDto request)
+    public async Task<MachineNodeDto> UpdateNodeAsync(string id, UpdateNodeRequestDto request)
     {
         var updatedNode = await machineRepository.UpdateAsync(id, request.Status, request.CoreTemperature);
 

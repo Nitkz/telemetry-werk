@@ -28,74 +28,92 @@ public class PseudoTelemetryGeneratorWorker(IServiceScopeFactory serviceScopeFac
         // 2. Background Channel Listener for live updates
         _ = Task.Run(async () =>
         {
-            await foreach (var msg in channelReader.ReadAllAsync(stoppingToken))
+            try
             {
-                try
+                await foreach (var msg in channelReader.ReadAllAsync(stoppingToken))
                 {
-                    if (msg.Action == "AddOrUpdate")
+                    try
                     {
-                        _activeMachines[msg.Machine.Id] = msg.Machine;
+                        if (msg.Action == "AddOrUpdate")
+                        {
+                            _activeMachines[msg.Machine.Id] = msg.Machine;
+                        }
+                        else if (msg.Action == "Remove")
+                        {
+                            _activeMachines.TryRemove(msg.Machine.Id, out _);
+                        }
                     }
-                    else if (msg.Action == "Remove")
+                    catch (Exception ex)
                     {
-                        _activeMachines.TryRemove(msg.Machine.Id, out _);
+                        logger.LogError(ex, "Error processing channel message");
                     }
                 }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Error processing channel message");
-                }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                // Normal shutdown, don't log as error
             }
         }, stoppingToken);
 
         // 3. High-speed generator loop
         using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(60)); // 60ms Interval High-Speed Push
 
-        while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
+        try
         {
-            try
+            while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
             {
-                var mockMetrics = new List<MachineTelemetryDto>();
-                foreach (var machine in _activeMachines.Values)
+                try
                 {
-                    if (string.Equals(machine.Status, "Running", StringComparison.OrdinalIgnoreCase))
+                    var mockMetrics = new List<MachineTelemetryDto>();
+                    foreach (var machine in _activeMachines.Values)
                     {
-                        // Simulate fluctuating machine data based on the machine's base properties
-                        mockMetrics.Add(new MachineTelemetryDto
+                        if (string.Equals(machine.Status, "Running", StringComparison.OrdinalIgnoreCase))
                         {
-                            Id = machine.Id,
-                            CoreTemperature = machine.CoreTemperature + (_random.NextDouble() * 5), // fluctuate around base temp
-                            PressurePercentage = 40 + _random.Next(0, 40),
-                            FlowRate = 200 + _random.NextDouble() * 60,
-                            Status = machine.Status
-                        });
-                    }
-                    else
-                    {
-                        // If stopped or in maintenance, send base/zero values
-                        mockMetrics.Add(new MachineTelemetryDto
+                            // Simulate fluctuating machine data based on the machine's base properties
+                            mockMetrics.Add(new MachineTelemetryDto
+                            {
+                                Id = machine.Id,
+                                CoreTemperature = machine.CoreTemperature + (_random.NextDouble() * 5), // fluctuate around base temp
+                                PressurePercentage = 40 + _random.Next(0, 40),
+                                FlowRate = 200 + _random.NextDouble() * 60,
+                                Status = machine.Status
+                            });
+                        }
+                        else
                         {
-                            Id = machine.Id,
-                            CoreTemperature = machine.CoreTemperature, // Slowly cools down or stays at base
-                            PressurePercentage = 0,
-                            FlowRate = 0,
-                            Status = machine.Status
-                        });
+                            // If stopped or in maintenance, send base/zero values
+                            mockMetrics.Add(new MachineTelemetryDto
+                            {
+                                Id = machine.Id,
+                                CoreTemperature = machine.CoreTemperature, // Slowly cools down or stays at base
+                                PressurePercentage = 0,
+                                FlowRate = 0,
+                                Status = machine.Status
+                            });
+                        }
                     }
-                }
 
-                if (mockMetrics.Any())
+                    if (mockMetrics.Any())
+                    {
+                        // Send generated mock data to the Application layer for processing
+                        using var scope = serviceScopeFactory.CreateScope();
+                        var telemetryIngestionService = scope.ServiceProvider.GetRequiredService<ITelemetryIngestionService>();
+                        await telemetryIngestionService.ProcessTelemetryAsync(mockMetrics, stoppingToken);
+                    }
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
-                    // Send generated mock data to the Application layer for processing
-                    using var scope = serviceScopeFactory.CreateScope();
-                    var telemetryIngestionService = scope.ServiceProvider.GetRequiredService<ITelemetryIngestionService>();
-                    await telemetryIngestionService.ProcessTelemetryAsync(mockMetrics, stoppingToken);
+                    // Normal shutdown, don't log as error
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error generating or sending mock telemetry");
                 }
             }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error generating or sending mock telemetry");
-            }
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            // Normal shutdown, don't log as error
         }
     }
 }
