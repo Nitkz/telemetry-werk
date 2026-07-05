@@ -12,6 +12,7 @@ The project follows **Clean Architecture** principles and **Domain-Driven Design
 - **REST & Real-time:** Uses standard `ControllerBase` for HTTP REST endpoints and **SignalR** for fast real-time telemetry streaming (e.g., 60ms intervals).
 - **Background Workers:** Uses `BackgroundService` (`IHostedService`) as a pseudo-generator for testing. The core telemetry ingestion logic is separated into the Application layer (`ITelemetryIngestionService`), making the system ready to accept data from real IoT devices via various connection types (HTTP, MQTT, WebSockets) seamlessly.
 - **Middleware:** Custom `ApiKeyMiddleware` for API Key authentication, supporting both Standard HTTP headers and WebSockets query strings.
+- **Observability:** Centralized structured logging using **Serilog**. Employs a custom **CorrelationIdMiddleware** for end-to-end request tracing and robust visibility across the system.
 
 ## Client Side (Frontend UI) 💻
 
