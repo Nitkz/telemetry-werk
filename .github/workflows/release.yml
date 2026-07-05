@@ -22,10 +22,12 @@ jobs:
         run: dotnet publish TelemetryWerk.Api/TelemetryWerk.Api.Host/TelemetryWerk.Api.Host.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/api
         
       - name: Publish UI (Windows EXE)
-        run: dotnet publish TelemetryWerk.Ui/TelemetryWerk.Ui/TelemetryWerk.Ui.csproj -c Release -r win-x64 --self-contained true -o ./publish/ui
+        run: dotnet publish TelemetryWerk.Ui/TelemetryWerk.Ui/TelemetryWerk.Ui.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:UseAppHost=true -o ./publish/ui
         
       - name: Zip Artifacts
         run: |
+          rm -f ./publish/api/appsettings.Development.json
+          rm -f ./publish/ui/appsettings.Development.json
           cd publish/api
           zip -r ../../telemetry-api-windows.zip .
           cd ../ui
