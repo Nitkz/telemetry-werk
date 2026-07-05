@@ -134,6 +134,12 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+var appPassword = app.Configuration["AppPassword"];
+if (string.IsNullOrWhiteSpace(appPassword))
+{
+    throw new InvalidOperationException("CRITICAL: 'AppPassword' is not set in configuration. You must set a password in appsettings.json before starting the API server.");
+}
+
 app.UseSerilogRequestLogging();
 
 // Configure the HTTP request pipeline.
