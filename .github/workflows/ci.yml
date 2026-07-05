@@ -53,7 +53,7 @@ jobs:
       run: dotnet build TelemetryWerk.Ui/TelemetryWerk.Ui.slnx -c Release --no-restore
       
     - name: Publish UI (Windows EXE)
-      run: dotnet publish TelemetryWerk.Ui/TelemetryWerk.Ui/TelemetryWerk.Ui.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:UseAppHost=true -o ./publish/ui-win
+      run: dotnet publish TelemetryWerk.Ui/TelemetryWerk.Ui/TelemetryWerk.Ui.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/ui-win
       
     - name: Remove Development Config
       run: rm -f ./publish/ui-win/appsettings.Development.json
