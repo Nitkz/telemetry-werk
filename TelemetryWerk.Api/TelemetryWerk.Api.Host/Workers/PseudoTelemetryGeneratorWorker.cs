@@ -38,7 +38,7 @@ public class PseudoTelemetryGeneratorWorker(IServiceScopeFactory serviceScopeFac
                         {
                             _activeMachines[msg.Machine.Id] = msg.Machine;
                         }
-                        else if (msg.Action == "Remove")
+                        else if (msg.Action == "Delete")
                         {
                             _activeMachines.TryRemove(msg.Machine.Id, out _);
                         }

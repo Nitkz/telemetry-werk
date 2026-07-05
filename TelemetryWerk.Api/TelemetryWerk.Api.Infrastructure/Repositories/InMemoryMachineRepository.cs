@@ -54,13 +54,15 @@ public class InMemoryMachineRepository : IMachineRepository
 
     public Task<MachineNode?> UpdateAsync(string id, string? status, double? coreTemperature)
     {
-        if (_machines.TryGetValue(id, out var machine))
+        if (!_machines.TryGetValue(id, out var existingMachine))
         {
-            if (status != null) machine.Status = status;
-            if (coreTemperature.HasValue) machine.CoreTemperature = coreTemperature.Value;
-            return Task.FromResult<MachineNode?>(machine);
+            return Task.FromResult<MachineNode?>(null);
         }
-        return Task.FromResult<MachineNode?>(null);
+
+        existingMachine.Status = status ?? existingMachine.Status;
+        if (coreTemperature.HasValue) existingMachine.CoreTemperature = coreTemperature.Value;
+
+        return Task.FromResult<MachineNode?>(existingMachine);
     }
 
     public Task<bool> DeleteAsync(string id)

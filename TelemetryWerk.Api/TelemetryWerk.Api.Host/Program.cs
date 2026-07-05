@@ -9,6 +9,9 @@ using TelemetryWerk.Api.Infrastructure.Repositories;
 using TelemetryWerk.Api.Application.Interfaces;
 using TelemetryWerk.Api.Application.Services;
 using TelemetryWerk.Api.Application.Contracts;
+using FluentValidation;
+using TelemetryWerk.Api.Application.Validators;
+using TelemetryWerk.Api.Host.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.ConfigureServerSettings();
@@ -26,7 +29,13 @@ builder.Services.AddSingleton<IMachineRepository, InMemoryMachineRepository>();
 builder.Services.AddScoped<IMachineService, MachineService>();
 builder.Services.AddSingleton<ITelemetryPublisher, SignalRTelemetryPublisher>();
 builder.Services.AddScoped<ITelemetryIngestionService, TelemetryIngestionService>();
-builder.Services.AddControllers();
+
+builder.Services.AddValidatorsFromAssemblyContaining<MachineNodeDtoValidator>();
+builder.Services.AddControllers(options => 
+{
+    options.Filters.Add<ValidationFilter>();
+});
+
 builder.Services.AddSignalR();
 builder.Services.AddHostedService<PseudoTelemetryGeneratorWorker>();
 

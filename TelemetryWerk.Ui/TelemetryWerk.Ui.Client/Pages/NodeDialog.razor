@@ -1,0 +1,36 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" IsValid="true">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="Node.Id" Label="Machine ID" Required="true" RequiredError="Machine ID is required" Variant="Variant.Outlined" Disabled="@(!IsNewNode)" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="Node.CoreTemperature" Label="Core Temp (°C)" Required="true" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect @bind-Value="Node.Status" Label="Status" Variant="Variant.Outlined" Required="true">
+                        @foreach (var status in TelemetryWerk.Ui.Client.Extensions.MachineStatusExtensions.AllStatuses)
+                        {
+                            <MudSelectItem Value="@status">@status</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@_isSaving">
+            @if (_isSaving)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <span class="ms-2">Saving...</span>
+            }
+            else
+            {
+                <span>Save</span>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>

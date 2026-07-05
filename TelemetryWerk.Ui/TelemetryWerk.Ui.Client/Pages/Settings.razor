@@ -17,11 +17,17 @@
     }
     else
     {
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+            <MudText Typo="Typo.h6">Machine Nodes</MudText>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenAddDialogAsync">Add Node</MudButton>
+        </MudStack>
+
         <MudTable Items="@_nodes" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="2">
             <HeaderContent>
                 <MudTh>Machine ID</MudTh>
                 <MudTh>Status</MudTh>
                 <MudTh>Core Temp (°C)</MudTh>
+                <MudTh>Actions</MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Machine ID">
@@ -33,6 +39,10 @@
                     </MudChip>
                 </MudTd>
                 <MudTd DataLabel="Core Temp">@context.CoreTemperature.ToString("F1")</MudTd>
+                <MudTd DataLabel="Actions">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditDialogAsync(context))" Class="mr-2" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteNodeAsync(context.Id))" />
+                </MudTd>
             </RowTemplate>
             <PagerContent>
                 <MudTablePager />

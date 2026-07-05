@@ -72,4 +72,22 @@ public class MachineService(IMachineRepository machineRepository, ChannelWriter<
             CoreTemperature = updatedNode.CoreTemperature 
         };
     }
+
+    public async Task DeleteNodeAsync(string id)
+    {
+        var protectedNodes = new HashSet<string> { "TK-001", "TK-002", "TK-003", "TK-004", "TK-005", "TK-006", "TK-007", "TK-008" };
+        if (protectedNodes.Contains(id))
+        {
+            throw new ConflictException($"Machine with ID {id} is protected and cannot be deleted.");
+        }
+
+        var deleted = await machineRepository.DeleteAsync(id);
+        if (!deleted)
+        {
+            throw new NotFoundException($"Machine with ID {id} not found.");
+        }
+
+        // Emit a delete event to SignalR
+        await channelWriter.WriteAsync(new MachineStateUpdateMessage("Delete", new MachineNode { Id = id }));
+    }
 }

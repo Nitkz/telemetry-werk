@@ -23,4 +23,52 @@ public class MachineApiServiceImpl(ITelemetryApiClient apiClient) : IMachineApiS
             Status = dto.Status ?? "Unknown"
         });
     }
+
+    public async Task<UiMachineNode?> AddNodeAsync(UiMachineNode node)
+    {
+        var dto = new MachineNodeDto
+        {
+            Id = node.Id,
+            CoreTemperature = node.CoreTemperature,
+            Status = node.Status
+        };
+
+        var response = await apiClient.NodesPOSTAsync(dto);
+
+        if (response?.Data == null)
+            return null;
+
+        return new UiMachineNode
+        {
+            Id = response.Data.Id ?? string.Empty,
+            CoreTemperature = response.Data.CoreTemperature,
+            Status = response.Data.Status ?? "Unknown"
+        };
+    }
+
+    public async Task<UiMachineNode?> UpdateNodeAsync(string id, UiMachineNode node)
+    {
+        var dto = new UpdateNodeRequestDto
+        {
+            CoreTemperature = node.CoreTemperature,
+            Status = node.Status
+        };
+
+        var response = await apiClient.NodesPATCHAsync(id, dto);
+
+        if (response?.Data == null)
+            return null;
+
+        return new UiMachineNode
+        {
+            Id = response.Data.Id ?? string.Empty,
+            CoreTemperature = response.Data.CoreTemperature,
+            Status = response.Data.Status ?? "Unknown"
+        };
+    }
+
+    public async Task DeleteNodeAsync(string id)
+    {
+        await apiClient.NodesDELETEAsync(id);
+    }
 }

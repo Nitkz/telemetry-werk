@@ -29,6 +29,7 @@ public class TelemetryController(IMachineService machineService) : ControllerBas
 
     // POST: api/v1/telemetry/nodes
     [HttpPost] [Route("nodes")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<ActionResult<UnifiedResponse<MachineNodeDto>>> AddNode([FromBody] MachineNodeDto request)
     {
         var result = await machineService.AddNodeAsync(request);
@@ -53,5 +54,14 @@ public class TelemetryController(IMachineService machineService) : ControllerBas
         };
 
         return Ok(response);
+    }
+
+    // DELETE: api/v1/telemetry/nodes/TK-005
+    [HttpDelete] [Route("nodes/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<ActionResult> DeleteNode([FromRoute] string id)
+    {
+        await machineService.DeleteNodeAsync(id);
+        return NoContent();
     }
 }

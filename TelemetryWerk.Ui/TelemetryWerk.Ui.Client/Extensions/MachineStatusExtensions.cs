@@ -4,6 +4,8 @@ namespace TelemetryWerk.Ui.Client.Extensions;
 
 public static class MachineStatusExtensions
 {
+    public static readonly IReadOnlyList<string> AllStatuses = new[] { "Running", "Warning", "Stopped" };
+
     public static string GetStatusHex(this string status) => status switch
     {
         "Running" => "#00E676",
