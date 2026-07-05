@@ -19,6 +19,9 @@ public class AuthController : ControllerBase
 
     [HttpPost("login")]
     [EnableRateLimiting("LoginLimiter")]
+    [ProducesResponseType(typeof(TelemetryWerk.Api.Application.Contracts.LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Login([FromForm] string password, CancellationToken cancellationToken)
     {
         try
@@ -26,7 +29,7 @@ public class AuthController : ControllerBase
             var sessionKey = await _authService.LoginAsync(password, cancellationToken);
             if (sessionKey != null)
             {
-                return Ok(new { token = sessionKey });
+                return Ok(new TelemetryWerk.Api.Application.Contracts.LoginResponse { Token = sessionKey });
             }
             return Unauthorized(new { message = "Invalid password." });
         }

@@ -19,3 +19,8 @@ public class PagedCollection<T>
     public string? LastId { get; set; }
     public bool HasMore { get; set; }
 }
+
+public class LoginResponse
+{
+    public string Token { get; set; } = string.Empty;
+}
