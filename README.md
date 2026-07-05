@@ -14,6 +14,7 @@ The project follows **Clean Architecture** principles and **Domain-Driven Design
 - **REST & Real-time:** Uses standard `ControllerBase` for HTTP REST endpoints and **SignalR** for fast real-time telemetry streaming (e.g., 60ms intervals).
 - **Background Workers:** Uses `BackgroundService` (`IHostedService`) as a pseudo-generator for testing. The core telemetry ingestion logic is separated into the Application layer (`ITelemetryIngestionService`), making the system ready to accept data from real IoT devices via various connection types (HTTP, MQTT, WebSockets) seamlessly.
 - **Security & Resilience:** Implements Built-in Rate Limiting (Fixed Window), dynamic environment-based CORS policies, and a custom `SecurityHeadersMiddleware` (XSS Protection, NoSniff, Frame Options, Strict Referrer) to harden the API.
+- **Session Management:** Built-in fast, thread-safe in-memory session tracking that automatically evicts the oldest active session when a user exceeds the maximum allowed concurrent devices (e.g., 10 devices).
 - **Middleware:** Custom `ApiKeyMiddleware` for secure API Key authentication (supports standard HTTP headers and WebSockets). Validates keys securely without leaking them in logs and records client IPs on failure for rate limit awareness.
 - **Observability:** Centralized structured logging using **Serilog**. Employs a custom **CorrelationIdMiddleware** for end-to-end request tracing and robust visibility across the system.
 - **Quality Assurance:** Comprehensive Unit Testing suite built with **xUnit**, **NSubstitute** (for mocking), and **FluentAssertions**. Tests are fully isolated using the AAA pattern and provide extensive coverage for business logic, repositories, and custom middlewares.
@@ -21,6 +22,8 @@ The project follows **Clean Architecture** principles and **Domain-Driven Design
 ## Client Side (Frontend UI) 💻
 
 - **Framework:** Built with **Blazor Web App** supporting both Server-side Pre-rendering and WebAssembly (WASM) interactive modes (`InteractiveWebAssembly` / `InteractiveServer`).
+- **BFF (Backend-For-Frontend) Authentication:** Uses a custom `ServerSessionAuthenticationHandler` acting as a BFF layer to proxy API requests, securely attaching `X-Forwarded-For` headers and Session Keys dynamically.
+- **Seamless Server-to-WASM State Transfer:** Utilizes Blazor's `PersistentComponentState` to securely serialize and transfer authentication state from Server Pre-rendering directly to the WASM client, eliminating redundant API calls on initial load.
 - **UI Component Library:** Uses **MudBlazor** for clean, modern, and responsive UI components.
 - **Data Isolation (Anti-Corruption Layer):** UI Domain Models (`Ui.Core`) have zero dependencies on the Backend models. We treat API integrations as external third-party services.
 - **NSwag Code Generation:** Uses **NSwag** to automatically generate strongly-typed API Clients (`TelemetryApiClient`) during the build process (`dotnet build`) by reading the Server's Swagger JSON. This ensures type safety without writing duplicate code.
