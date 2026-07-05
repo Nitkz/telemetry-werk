@@ -47,8 +47,8 @@ public class ApiKeyMiddleware(RequestDelegate next)
             }
         }
 
-        logger.LogDebug("[API Key Middleware] Expected: '{ExpectedKey}'", expectedKey);
-        logger.LogDebug("[API Key Middleware] Provided: '{ProvidedKey}'", providedKey);
+        logger.LogDebug("[API Key Middleware] Key expected: {KeyExpected}", !string.IsNullOrWhiteSpace(expectedKey));
+        logger.LogDebug("[API Key Middleware] Key provided: {KeyProvided}", !string.IsNullOrWhiteSpace(providedKey));
         logger.LogDebug("[API Key Middleware] Request Path: {Path}", context.Request.Path);
 
         // Validate Key

@@ -14,6 +14,8 @@ public class PseudoTelemetryGeneratorWorker(IServiceScopeFactory serviceScopeFac
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        logger.LogInformation("Worker {WorkerName} starting", nameof(PseudoTelemetryGeneratorWorker));
+
         // 1. Initial DB Load
         using (var scope = serviceScopeFactory.CreateScope())
         {
@@ -23,7 +25,9 @@ public class PseudoTelemetryGeneratorWorker(IServiceScopeFactory serviceScopeFac
             {
                 _activeMachines[m.Id] = m;
             }
+            logger.LogInformation("Loaded {MachineCount} active machines initially", _activeMachines.Count);
         }
+
 
         // 2. Background Channel Listener for live updates
         _ = Task.Run(async () =>
@@ -107,7 +111,7 @@ public class PseudoTelemetryGeneratorWorker(IServiceScopeFactory serviceScopeFac
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error generating or sending mock telemetry");
+                    logger.LogWarning(ex, "Error in generator loop, continuing");
                 }
             }
         }
@@ -115,5 +119,7 @@ public class PseudoTelemetryGeneratorWorker(IServiceScopeFactory serviceScopeFac
         {
             // Normal shutdown, don't log as error
         }
+
+        logger.LogInformation("Worker {WorkerName} stopping", nameof(PseudoTelemetryGeneratorWorker));
     }
 }

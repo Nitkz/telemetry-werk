@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
 using TelemetryWerk.Api.Application.Interfaces;
 using TelemetryWerk.Api.Domain.Entities;
 using TelemetryWerk.Api.Domain.Interfaces;
@@ -7,7 +8,7 @@ using TelemetryWerk.Api.Application.Exceptions;
 
 namespace TelemetryWerk.Api.Application.Services;
 
-public class MachineService(IMachineRepository machineRepository, ChannelWriter<MachineStateUpdateMessage> channelWriter) : IMachineService
+public class MachineService(IMachineRepository machineRepository, ChannelWriter<MachineStateUpdateMessage> channelWriter, ILogger<MachineService> logger) : IMachineService
 {
     public async Task<PagedCollection<MachineNodeDto>> GetNodesAsync(int limit, string? afterId)
     {
@@ -47,6 +48,8 @@ public class MachineService(IMachineRepository machineRepository, ChannelWriter<
 
         await machineRepository.AddAsync(newNode);
 
+        logger.LogInformation("Node {MachineId} added", newNode.Id);
+
         await channelWriter.WriteAsync(new MachineStateUpdateMessage("AddOrUpdate", newNode));
 
         return new MachineNodeDto 
@@ -61,7 +64,13 @@ public class MachineService(IMachineRepository machineRepository, ChannelWriter<
     {
         var updatedNode = await machineRepository.UpdateAsync(id, request.Status, request.CoreTemperature);
 
-        if (updatedNode == null) throw new NotFoundException($"Machine with ID {id} not found.");
+        if (updatedNode == null) 
+        {
+            logger.LogWarning("Attempted to update non-existent node {MachineId}", id);
+            throw new NotFoundException($"Machine with ID {id} not found.");
+        }
+
+        logger.LogInformation("Node {MachineId} updated", updatedNode.Id);
 
         await channelWriter.WriteAsync(new MachineStateUpdateMessage("AddOrUpdate", updatedNode));
 

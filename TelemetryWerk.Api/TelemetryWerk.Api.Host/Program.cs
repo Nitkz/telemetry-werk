@@ -1,3 +1,4 @@
+using Serilog;
 using System.Threading.Channels;
 using TelemetryWerk.Api.Host.Extensions;
 using TelemetryWerk.Api.Host.Hubs;
@@ -14,6 +15,11 @@ using TelemetryWerk.Api.Application.Validators;
 using TelemetryWerk.Api.Host.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, configuration) =>
+    configuration.Enrich.FromLogContext()
+                 .WriteTo.Console());
+
 builder.Host.ConfigureServerSettings();
 
 // Create a Pub/Sub Channel for real-time Machine State updates between REST APIs and Background Workers
@@ -81,6 +87,8 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+app.UseSerilogRequestLogging();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -91,6 +99,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAll");
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ApiKeyMiddleware>();
 
 app.MapControllers();
