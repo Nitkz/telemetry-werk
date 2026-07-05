@@ -47,17 +47,16 @@ public class ApiKeyMiddleware(RequestDelegate next)
             }
         }
 
-        logger.LogDebug("[API Key Middleware] Key expected: {KeyExpected}", !string.IsNullOrWhiteSpace(expectedKey));
-        logger.LogDebug("[API Key Middleware] Key provided: {KeyProvided}", !string.IsNullOrWhiteSpace(providedKey));
-        logger.LogDebug("[API Key Middleware] Request Path: {Path}", context.Request.Path);
-
         // Validate Key
         if (string.IsNullOrWhiteSpace(providedKey) || providedKey != expectedKey)
         {
+            logger.LogWarning("API key validation: Failed. Client IP: {IpAddress}", context.Connection.RemoteIpAddress);
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             await context.Response.WriteAsync("Unauthorized: Invalid API Key.");
             return;
         }
+
+        logger.LogDebug("API key validation: Success");
 
         await next(context);
     }
