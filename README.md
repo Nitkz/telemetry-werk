@@ -1,5 +1,7 @@
 # TelemetryWerk
 
+[![CI](https://github.com/Nitkz/telemetry-werk/actions/workflows/ci.yml/badge.svg)](https://github.com/Nitkz/telemetry-werk/actions/workflows/ci.yml)
+
 High-Performance Industrial IoT Telemetry Monitoring Platform.
 
 ## Overall Architecture 🏗️

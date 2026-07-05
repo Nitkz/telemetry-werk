@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+          
+      - name: Publish API (Windows EXE)
+        run: dotnet publish TelemetryWerk.Api/TelemetryWerk.Api.Host/TelemetryWerk.Api.Host.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/api
+        
+      - name: Publish UI (Windows EXE)
+        run: dotnet publish TelemetryWerk.Ui/TelemetryWerk.Ui/TelemetryWerk.Ui.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/ui
+        
+      - name: Zip Artifacts
+        run: |
+          cd publish/api
+          zip -r ../../telemetry-api-windows.zip .
+          cd ../ui
+          zip -r ../../telemetry-ui-windows.zip .
+          cd ../../
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          files: |
+            telemetry-api-windows.zip
+            telemetry-ui-windows.zip
