@@ -12,9 +12,20 @@
 .scada-terminal {
     font-family: 'Consolas', monospace;
     font-size: 0.75rem;
-    background-color: var(--mud-palette-surface);
+    background-color: #0d1117; /* GitHub Dark dim background */
     color: var(--mud-palette-secondary);
     line-height: 1.2;
+}
+
+.scada-terminal-line {
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+    padding: 2px 4px;
+    transition: background-color 0.1s ease;
+    cursor: default;
+}
+
+.scada-terminal-line:hover {
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 ::deep .mud-card-content {
