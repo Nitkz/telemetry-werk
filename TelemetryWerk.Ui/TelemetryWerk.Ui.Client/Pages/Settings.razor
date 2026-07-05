@@ -1,0 +1,42 @@
+@page "/settings"
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h5" Class="mb-4">System Settings / API Data</MudText>
+    
+    <MudText Typo="Typo.body1" Class="mb-4 text-secondary">
+        This data is fetched using the REST API endpoint (<code>/api/v1/Telemetry/nodes</code>) authenticated with X-Api-Key.
+    </MudText>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_error != null)
+    {
+        <MudAlert Severity="Severity.Error">@_error</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="@_nodes" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="2">
+            <HeaderContent>
+                <MudTh>Machine ID</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Core Temp (°C)</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Machine ID">
+                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold">@context.Id</MudText>
+                </MudTd>
+                <MudTd DataLabel="Status">
+                    <MudChip T="string" Color="@(context.Status.GetStatusColor())" Size="Size.Small" Variant="Variant.Filled">
+                        @context.Status.ToUpper()
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Core Temp">@context.CoreTemperature.ToString("F1")</MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    }
+</MudContainer>

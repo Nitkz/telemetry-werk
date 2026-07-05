@@ -1,0 +1,26 @@
+/* Custom High-Density SCADA Style Overrides */
+.scada-container {
+    font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+    font-size: 0.8rem;
+}
+
+.scada-panel {
+    border: 1px solid var(--mud-palette-lines-default) !important;
+    border-radius: 2px !important;
+}
+
+.scada-terminal {
+    font-family: 'Consolas', monospace;
+    font-size: 0.75rem;
+    background-color: var(--mud-palette-surface);
+    color: var(--mud-palette-secondary);
+    line-height: 1.2;
+}
+
+::deep .mud-card-content {
+    padding: 6px !important;
+}
+
+.mud-grid-spacing-xs-1 {
+    grid-gap: 4px;
+}

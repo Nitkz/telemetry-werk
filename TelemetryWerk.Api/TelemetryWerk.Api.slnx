@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="TelemetryWerk.Api.Application/TelemetryWerk.Api.Application.csproj" Id="443c45a4-d6c6-402f-8e2c-f63b6bb9cc05" />
+  <Project Path="TelemetryWerk.Api.Domain/TelemetryWerk.Api.Domain.csproj" Id="a10d7bf8-33e7-411d-a95a-3748a95147dd" />
+  <Project Path="TelemetryWerk.Api.Host/TelemetryWerk.Api.Host.csproj" />
+  <Project Path="TelemetryWerk.Api.Infrastructure/TelemetryWerk.Api.Infrastructure.csproj" Id="0bc3f442-f936-4c92-a541-236ea6cd14a4" />
+
+</Solution>

@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="TelemetryWerk.Ui.Client/TelemetryWerk.Ui.Client.csproj" />
+  <Project Path="TelemetryWerk.Ui.Core/TelemetryWerk.Ui.Core.csproj" />
+  <Project Path="TelemetryWerk.Ui.Infrastructure/TelemetryWerk.Ui.Infrastructure.csproj" />
+  <Project Path="TelemetryWerk.Ui/TelemetryWerk.Ui.csproj" />
+</Solution>

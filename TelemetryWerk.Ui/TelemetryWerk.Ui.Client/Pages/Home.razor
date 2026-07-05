@@ -1,0 +1,80 @@
+@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@using System.Collections.Concurrent
+@using TelemetryWerk.Ui.Core.Configurations
+@using TelemetryWerk.Ui.Core.Entities
+@implements IAsyncDisposable
+
+<div class="scada-container pa-2">
+    <div class="d-flex align-center justify-space-between mb-2 pa-1 scada-panel" style="background-color: var(--mud-palette-surface);">
+        <div class="d-flex align-center gap-4">
+            <MudText Typo="Typo.subtitle2" Class="font-weight-bold" Color="Color.Primary">TELEMETRY DASHBOARD</MudText>
+            <MudChip T="string" Color="@(_isConnected ? Color.Secondary : Color.Error)" Size="Size.Small" Variant="Variant.Text" Label="true">
+                WEBSOCKET STATUS: @(_hubConnection?.State.ToString().ToUpper() ?? "DISCONNECTED")
+            </MudChip>
+        </div>
+        <div class="d-flex align-center gap-4">
+            <MudText Typo="Typo.caption" Class="text-secondary">BURST FRAMES: <strong>@_totalFramesIngested.ToString("N0")</strong></MudText>
+            <MudText Typo="Typo.caption" Class="text-secondary">SYS CLOCK: <strong>@DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC")</strong></MudText>
+        </div>
+    </div>
+
+    <MudGrid Spacing="1">
+        <MudItem xs="12" md="4">
+            <MudGrid Spacing="1">
+                @foreach (var machine in _machines.Values)
+                {
+                    <MudItem xs="6" sm="4" md="6">
+                        <MudCard Class="scada-panel">
+                            <MudCardContent>
+                                <div class="d-flex justify-space-between align-center mb-1">
+                                    <MudText Typo="Typo.caption" Class="font-weight-bold">@machine.Id</MudText>
+                                    <div style="width: 8px; height: 8px; border-radius: 50%; background-color: @(machine.Status.GetStatusHex());"></div>
+                                </div>
+                                <div class="d-flex align-baseline justify-space-between">
+                                    <MudText Typo="Typo.h6" Style="font-size: 1.1rem; font-weight: 700;">
+                                        @machine.CoreTemperature.ToString("F1")<span style="font-size: 0.7rem; color: #8B949E; margin-left: 2px;">°C</span>
+                                    </MudText>
+                                    <MudText Typo="Typo.caption" Color="@(machine.Status.GetStatusColor())">@machine.Status.ToUpper()</MudText>
+                                </div>
+                                <div class="mt-1">
+                                    <MudProgressLinear Color="@(machine.Status.GetStatusColor())" Value="@machine.PressurePercentage" Style="height: 3px;" Max="100" />
+                                </div>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudItem>
+
+        <MudItem xs="12" md="8">
+            <MudCard Class="scada-panel mb-2">
+                <MudCardContent>
+                    <div class="d-flex justify-space-between align-center mb-2">
+                        <MudText Typo="Typo.caption" Class="font-weight-bold">LIVE METRIC OVER VIEW (SIGNAL RESILIENCE)</MudText>
+                        <span style="color: var(--mud-palette-primary); font-size: 0.75rem;">WS PIPELINE OPEN</span>
+                    </div>
+                    <MudChart ChartType="ChartType.Line" 
+                              ChartSeries="@(new List<ChartSeries>() { new ChartSeries { Data = _sparklineStream.Select(x => (double)x).ToArray() } })" 
+                              ChartOptions="@(new ChartOptions { YAxisLines = false, XAxisLines = false })" 
+                              Width="100%" 
+                              Height="60px" />
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12">
+            <div class="scada-terminal pa-2 scada-panel" style="height: 160px; overflow-y: auto;">
+                @foreach (var frame in _terminalFrames)
+                {
+                    <div class="d-flex gap-4">
+                        <span style="color: var(--mud-palette-info);">[@frame.Timestamp.ToString("HH:mm:ss.fff")]</span>
+                        <span style="color: var(--mud-palette-warning);">@frame.FrameHex</span>
+                        <span style="color: var(--mud-palette-secondary);">WS_NET_INGRESS // PACKET CAPTURED & BINDED</span>
+                    </div>
+                }
+            </div>
+        </MudItem>
+    </MudGrid>
+</div>
+
