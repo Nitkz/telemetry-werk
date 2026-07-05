@@ -106,10 +106,18 @@
                     {
                         var frame = _terminalFrames[i];
                         var pkgNumber = _totalFramesIngested - i;
+                        var maxMetric = frame.Metrics.Any() ? frame.Metrics.MaxBy(m => m.CoreTemperature) : null;
+                        
                         <MudStack Row="true" Spacing="4" Class="scada-terminal-line">
                             <span style="color: var(--mud-palette-info);">[@frame.Timestamp.ToString("HH:mm:ss.fff")]</span>
-                            <span style="color: var(--mud-palette-warning); width: 220px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@frame.FrameHex">@frame.FrameHex</span>
-                            <span style="color: var(--mud-palette-success);">// BINDED: PKG_SEQ #@pkgNumber.ToString("D6")</span>
+                            <span style="color: var(--mud-palette-warning); width: 180px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@frame.FrameHex">@frame.FrameHex</span>
+                            <span style="color: var(--mud-palette-success);">
+                                // BINDED: PKG_SEQ #@pkgNumber.ToString("D6")
+                                @if (maxMetric != null)
+                                {
+                                    <span style="color: var(--mud-palette-text-secondary); margin-left: 8px;">[MAX: @maxMetric.CoreTemperature.ToString("F1")°C @@ @maxMetric.Id]</span>
+                                }
+                            </span>
                         </MudStack>
                     }
                 </div>
