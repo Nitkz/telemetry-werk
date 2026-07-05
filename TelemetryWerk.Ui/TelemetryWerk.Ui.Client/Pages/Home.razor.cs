@@ -49,6 +49,26 @@ public partial class Home : ComponentBase, IAsyncDisposable
             .WithAutomaticReconnect()
             .Build();
 
+        _hubConnection.Closed += async (error) =>
+        {
+            _isConnected = false;
+            await InvokeAsync(StateHasChanged);
+            // Restart the manual retry loop since AutomaticReconnect gives up after its configured attempts.
+            _ = ConnectWithRetryAsync();
+        };
+
+        _hubConnection.Reconnecting += async (error) =>
+        {
+            _isConnected = false;
+            await InvokeAsync(StateHasChanged);
+        };
+
+        _hubConnection.Reconnected += async (connectionId) =>
+        {
+            _isConnected = true;
+            await InvokeAsync(StateHasChanged);
+        };
+
         _hubConnection.On<UiTelemetryPackageFrame>("ReceiveTelemetryPackage", async (packet) =>
         {
             _totalFramesIngested++;
