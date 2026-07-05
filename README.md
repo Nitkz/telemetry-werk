@@ -11,8 +11,10 @@ The project follows **Clean Architecture** principles and **Domain-Driven Design
 - **Architecture Layout:** Structured with clear Clean Architecture layers (`Api.Domain`, `Api.Application`, `Api.Infrastructure`, `Api.Host`).
 - **REST & Real-time:** Uses standard `ControllerBase` for HTTP REST endpoints and **SignalR** for fast real-time telemetry streaming (e.g., 60ms intervals).
 - **Background Workers:** Uses `BackgroundService` (`IHostedService`) as a pseudo-generator for testing. The core telemetry ingestion logic is separated into the Application layer (`ITelemetryIngestionService`), making the system ready to accept data from real IoT devices via various connection types (HTTP, MQTT, WebSockets) seamlessly.
-- **Middleware:** Custom `ApiKeyMiddleware` for API Key authentication, supporting both Standard HTTP headers and WebSockets query strings.
+- **Security & Resilience:** Implements Built-in Rate Limiting (Fixed Window), dynamic environment-based CORS policies, and a custom `SecurityHeadersMiddleware` (XSS Protection, NoSniff, Frame Options, Strict Referrer) to harden the API.
+- **Middleware:** Custom `ApiKeyMiddleware` for secure API Key authentication (supports standard HTTP headers and WebSockets). Validates keys securely without leaking them in logs and records client IPs on failure for rate limit awareness.
 - **Observability:** Centralized structured logging using **Serilog**. Employs a custom **CorrelationIdMiddleware** for end-to-end request tracing and robust visibility across the system.
+- **Quality Assurance:** Comprehensive Unit Testing suite built with **xUnit**, **NSubstitute** (for mocking), and **FluentAssertions**. Tests are fully isolated using the AAA pattern and provide extensive coverage for business logic, repositories, and custom middlewares.
 
 ## Client Side (Frontend UI) 💻
 
