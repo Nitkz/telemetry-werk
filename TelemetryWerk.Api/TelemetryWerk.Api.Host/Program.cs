@@ -81,6 +81,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAll");
 
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<ApiKeyMiddleware>();
 
 app.MapControllers();

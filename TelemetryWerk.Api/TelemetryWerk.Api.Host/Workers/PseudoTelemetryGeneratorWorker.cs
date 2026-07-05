@@ -7,7 +7,7 @@ using TelemetryWerk.Api.Domain.Interfaces;
 
 namespace TelemetryWerk.Api.Host.Workers;
 
-public class PseudoTelemetryGeneratorWorker(IServiceScopeFactory serviceScopeFactory, ChannelReader<MachineStateUpdateMessage> channelReader) : BackgroundService
+public class PseudoTelemetryGeneratorWorker(IServiceScopeFactory serviceScopeFactory, ChannelReader<MachineStateUpdateMessage> channelReader, ILogger<PseudoTelemetryGeneratorWorker> logger) : BackgroundService
 {
     private readonly Random _random = new();
     private readonly ConcurrentDictionary<string, MachineNode> _activeMachines = new();
@@ -30,13 +30,20 @@ public class PseudoTelemetryGeneratorWorker(IServiceScopeFactory serviceScopeFac
         {
             await foreach (var msg in channelReader.ReadAllAsync(stoppingToken))
             {
-                if (msg.Action == "AddOrUpdate")
+                try
                 {
-                    _activeMachines[msg.Machine.Id] = msg.Machine;
+                    if (msg.Action == "AddOrUpdate")
+                    {
+                        _activeMachines[msg.Machine.Id] = msg.Machine;
+                    }
+                    else if (msg.Action == "Remove")
+                    {
+                        _activeMachines.TryRemove(msg.Machine.Id, out _);
+                    }
                 }
-                else if (msg.Action == "Remove")
+                catch (Exception ex)
                 {
-                    _activeMachines.TryRemove(msg.Machine.Id, out _);
+                    logger.LogError(ex, "Error processing channel message");
                 }
             }
         }, stoppingToken);
@@ -46,41 +53,48 @@ public class PseudoTelemetryGeneratorWorker(IServiceScopeFactory serviceScopeFac
 
         while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
         {
-            var mockMetrics = new List<MachineTelemetryDto>();
-            foreach (var machine in _activeMachines.Values)
+            try
             {
-                if (string.Equals(machine.Status, "Running", StringComparison.OrdinalIgnoreCase))
+                var mockMetrics = new List<MachineTelemetryDto>();
+                foreach (var machine in _activeMachines.Values)
                 {
-                    // Simulate fluctuating machine data based on the machine's base properties
-                    mockMetrics.Add(new MachineTelemetryDto
+                    if (string.Equals(machine.Status, "Running", StringComparison.OrdinalIgnoreCase))
                     {
-                        Id = machine.Id,
-                        CoreTemperature = machine.CoreTemperature + (_random.NextDouble() * 5), // fluctuate around base temp
-                        PressurePercentage = 40 + _random.Next(0, 40),
-                        FlowRate = 200 + _random.NextDouble() * 60,
-                        Status = machine.Status
-                    });
+                        // Simulate fluctuating machine data based on the machine's base properties
+                        mockMetrics.Add(new MachineTelemetryDto
+                        {
+                            Id = machine.Id,
+                            CoreTemperature = machine.CoreTemperature + (_random.NextDouble() * 5), // fluctuate around base temp
+                            PressurePercentage = 40 + _random.Next(0, 40),
+                            FlowRate = 200 + _random.NextDouble() * 60,
+                            Status = machine.Status
+                        });
+                    }
+                    else
+                    {
+                        // If stopped or in maintenance, send base/zero values
+                        mockMetrics.Add(new MachineTelemetryDto
+                        {
+                            Id = machine.Id,
+                            CoreTemperature = machine.CoreTemperature, // Slowly cools down or stays at base
+                            PressurePercentage = 0,
+                            FlowRate = 0,
+                            Status = machine.Status
+                        });
+                    }
                 }
-                else
+
+                if (mockMetrics.Any())
                 {
-                    // If stopped or in maintenance, send base/zero values
-                    mockMetrics.Add(new MachineTelemetryDto
-                    {
-                        Id = machine.Id,
-                        CoreTemperature = machine.CoreTemperature, // Slowly cools down or stays at base
-                        PressurePercentage = 0,
-                        FlowRate = 0,
-                        Status = machine.Status
-                    });
+                    // Send generated mock data to the Application layer for processing
+                    using var scope = serviceScopeFactory.CreateScope();
+                    var telemetryIngestionService = scope.ServiceProvider.GetRequiredService<ITelemetryIngestionService>();
+                    await telemetryIngestionService.ProcessTelemetryAsync(mockMetrics, stoppingToken);
                 }
             }
-
-            if (mockMetrics.Any())
+            catch (Exception ex)
             {
-                // Send generated mock data to the Application layer for processing
-                using var scope = serviceScopeFactory.CreateScope();
-                var telemetryIngestionService = scope.ServiceProvider.GetRequiredService<ITelemetryIngestionService>();
-                await telemetryIngestionService.ProcessTelemetryAsync(mockMetrics, stoppingToken);
+                logger.LogError(ex, "Error generating or sending mock telemetry");
             }
         }
     }

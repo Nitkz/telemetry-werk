@@ -3,6 +3,7 @@ using TelemetryWerk.Api.Application.Interfaces;
 using TelemetryWerk.Api.Domain.Entities;
 using TelemetryWerk.Api.Domain.Interfaces;
 using TelemetryWerk.Api.Application.Contracts;
+using TelemetryWerk.Api.Application.Exceptions;
 
 namespace TelemetryWerk.Api.Application.Services;
 
@@ -31,6 +32,12 @@ public class MachineService(IMachineRepository machineRepository, ChannelWriter<
 
     public async Task<MachineNodeDto> AddNodeAsync(MachineNodeDto request)
     {
+        var existing = await machineRepository.GetByIdAsync(request.Id);
+        if (existing != null)
+        {
+            throw new ConflictException($"Machine with ID {request.Id} already exists.");
+        }
+
         var newNode = new MachineNode
         {
             Id = request.Id,
@@ -54,7 +61,7 @@ public class MachineService(IMachineRepository machineRepository, ChannelWriter<
     {
         var updatedNode = await machineRepository.UpdateAsync(id, request.Status, request.CoreTemperature);
 
-        if (updatedNode == null) return null;
+        if (updatedNode == null) throw new NotFoundException($"Machine with ID {id} not found.");
 
         await channelWriter.WriteAsync(new MachineStateUpdateMessage("AddOrUpdate", updatedNode));
 

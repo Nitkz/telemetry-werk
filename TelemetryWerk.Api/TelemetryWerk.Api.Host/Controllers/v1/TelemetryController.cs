@@ -47,14 +47,6 @@ public class TelemetryController(IMachineService machineService) : ControllerBas
     {
         var result = await machineService.UpdateNodeAsync(id, request);
 
-        if (result == null)
-        {
-            return NotFound(new UnifiedResponse<MachineNodeDto> 
-            { 
-                Status = new StatusResponseDto { Code = 404, Message = $"Machine {id} not found." } 
-            });
-        }
-
         var response = new UnifiedResponse<MachineNodeDto>
         {
             Data = result
