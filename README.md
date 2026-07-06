@@ -4,6 +4,12 @@
 
 High-Performance Industrial IoT Telemetry Monitoring Platform.
 
+## Screenshots 📸
+
+![Login](docs/images/telemetry-login.jpg)
+![Dashboard](docs/images/telemetry-dashboard.jpg)
+![Settings](docs/images/telemetry-setting.jpg)
+
 ## Overall Architecture 🏗️
 
 The project follows **Clean Architecture** principles and **Domain-Driven Design (DDD)** to ensure a clear **Separation of Concerns**. The solution is divided into two main parts: the Backend API and the Frontend UI. They communicate only via REST APIs and real-time WebSockets (SignalR), keeping both systems completely decoupled.
